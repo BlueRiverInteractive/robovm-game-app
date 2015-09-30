@@ -78,6 +78,10 @@ project(":core") {
     }
 }
 
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.6'
+}
+
 tasks.eclipse.doLast {
     delete ".project"
 }
