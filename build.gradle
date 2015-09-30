@@ -1,11 +1,24 @@
-buildscript {
+import groovy.json.JsonSlurper
+
+buildscript {    
+    def versionFile = file('versions.json')
+    def json = new JsonSlurper().parseText(versionFile.text)
+
+    ext {
+        gdxVersion = json.libGDXVersion
+        roboVMVersion = json.roboVMVersion
+        androidGradleToolsVersion = json.androidGradleToolsVersion
+        androidBuildToolsVersion = json.androidBuildToolsVersion
+        androidSDKVersion = Integer.parseInt(json.androidSDKVersion)
+    }
+
     repositories {
         mavenCentral()
         maven { url "https://oss.sonatype.org/content/repositories/snapshots/" }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:1.2.3'
-        classpath 'org.robovm:robovm-gradle-plugin:1.8.0'
+        classpath 'com.android.tools.build:gradle:' + androidGradleToolsVersion
+        classpath 'org.robovm:robovm-gradle-plugin:' + roboVMVersion
     }
 }
 
@@ -16,11 +29,6 @@ allprojects {
     version = '1.0'
     ext {
         appName = "RoboMission"
-        gdxVersion = '1.7.0'
-        roboVMVersion = '1.8.0'
-        box2DLightsVersion = '1.4'
-        ashleyVersion = '1.6.0'
-        aiVersion = '1.6.0'
     }
 
     repositories {
