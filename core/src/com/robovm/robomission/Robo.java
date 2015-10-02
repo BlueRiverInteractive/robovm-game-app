@@ -2,6 +2,7 @@ package com.robovm.robomission;
 
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 /**
@@ -14,6 +15,7 @@ public class Robo {
     private final Vector2 position = new Vector2();
     private final Vector2 velocity = new Vector2();
     private float stateTime = 0;
+    private float fuel = 100;
 
     public Robo(float x, float y) {
         this.position.set(x, y);
@@ -47,5 +49,26 @@ public class Robo {
      */
     public void increaseStateTime(float delta) {
         this.stateTime += delta;
+    }
+
+    /**
+     * @return fuel amount, 0 to 100
+     */
+    public float getFuel() {
+        return fuel;
+    }
+
+    /**
+     * @param fuel fuel to add
+     */
+    public void addFuel(float fuel) {
+        this.fuel = Math.min(100, this.fuel + fuel);
+    }
+
+    /**
+     * @param fuel fuel to remove
+     */
+    public void removeFuel(float fuel) {
+        this.fuel = Math.max(0, this.fuel - fuel);
     }
 }

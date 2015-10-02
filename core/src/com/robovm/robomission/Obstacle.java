@@ -1,6 +1,7 @@
 package com.robovm.robomission;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
 /**
@@ -11,10 +12,10 @@ import com.badlogic.gdx.math.Vector2;
 public class Obstacle {
     private final Vector2 position = new Vector2();
     private boolean counted;
+    private float rotation;
 
-    public Obstacle(float x, float y) {
-        this.position.x = x;
-        this.position.y = y;
+    public Obstacle() {
+        this.rotation = MathUtils.random(360);
     }
 
     /**
@@ -36,5 +37,19 @@ public class Obstacle {
      */
     public void setCounted(boolean counted) {
         this.counted = counted;
+    }
+
+    /**
+     * @return the rotation angle in degrees
+     */
+    public float getRotation() {
+        return rotation;
+    }
+
+    /**
+     * @param rotation the rotation angle in degrees
+     */
+    public void setRotation(float rotation) {
+        this.rotation = rotation;
     }
 }

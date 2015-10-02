@@ -10,11 +10,11 @@ public class RoboMission extends ApplicationAdapter {
 
     @Override
     public void create() {
-        // create our initial world
-        world = new World();
-
         // create our initial renderer
         renderer = new Renderer();
+
+        // create our initial world
+        world = new World(renderer);
     }
 
     @Override

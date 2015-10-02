@@ -3,20 +3,23 @@ package com.robovm.robomission;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.Animation;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.*;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.utils.Array;
 
 /**
  * Takes a world and renders its state to the screen
  * and via audio output. Also manages all asset, from
  * UI graphics to sound effects.
  */
-public class Renderer {
+public class Renderer implements World.WorldCallback {
     private final SpriteBatch batch;
+    private final ShapeRenderer shapeRenderer;
     private final OrthographicCamera worldCamera;
     private final OrthographicCamera uiCamera;
 
@@ -25,12 +28,16 @@ public class Renderer {
     private final TextureRegion ground;
     private final TextureRegion ceiling;
     private final TextureRegion obstacle;
-    private final TextureRegion obstacleUpsideDown;
-    private final Animation roboAnimation;
+    private final TextureRegion fuel;
+    private final Animation roboUp;
+    private final Animation roboDown;
+    private final Animation roboDead;
     private final TextureRegion ready;
     private final TextureRegion gameOver;
     private final Music backgroundMusic;
     private final Sound explosion;
+    private final Sound fuelPickedUp;
+    private final Music thruster;
 
     // Used for generating an infinitely scrolling
     // world (ground and ceiling)
@@ -39,6 +46,9 @@ public class Renderer {
     public Renderer() {
         // the SpriteBatch is used to render TextureRegions
         batch = new SpriteBatch();
+
+        // the ShapeRenderer to render debug bounds and fuel gauge
+        shapeRenderer = new ShapeRenderer();
 
         // The world camera is used to render objects within
         // the game world. We assume 800x480 world units to
@@ -60,38 +70,72 @@ public class Renderer {
 
         // the static background
         background = new Texture("background.png");
+        background.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // the ground and ceiling
         ground = new TextureRegion(new Texture("ground.png"));
+        ground.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         ceiling = new TextureRegion(ground);
         ceiling.flip(true, true);
 
         // the obstacle, and its upside down version
         obstacle = new TextureRegion(new Texture("rock.png"));
-        obstacleUpsideDown = new TextureRegion(obstacle);
-        obstacleUpsideDown.flip(false, true);
+        obstacle.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
-        // Robo's animation, composed of multiple frames
-        Texture frame1 = new Texture("plane1.png");
-        frame1.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        Texture frame2 = new Texture("plane2.png");
-        Texture frame3 = new Texture("plane3.png");
-        roboAnimation = new Animation(0.05f, new TextureRegion(frame1), new TextureRegion(frame2), new TextureRegion(frame3), new TextureRegion(frame2));
-        roboAnimation.setPlayMode(Animation.PlayMode.LOOP);
+        // the fuel cell
+        Pixmap pixmap = new Pixmap(100, 100, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.GREEN);
+        pixmap.fill();
+        fuel = new TextureRegion(new Texture(pixmap));
+
+        // Robo's animations
+        roboUp = loadAnimation("robo-up", 3, 0.07f);
+        roboUp.setPlayMode(Animation.PlayMode.LOOP_PINGPONG);
+        roboDown = loadAnimation("robo-down", 3, 0.1f);
+        roboDown.setPlayMode(Animation.PlayMode.LOOP_PINGPONG);
+        roboDead = loadAnimation("robo-dead", 3, 0.07f);
+        roboDead.setPlayMode(Animation.PlayMode.LOOP);
 
         // The ready label
         ready = new TextureRegion(new Texture("ready.png"));
+        ready.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // The game over label
         gameOver = new TextureRegion(new Texture("gameover.png"));
+        gameOver.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // The background music, we immediately start playing it
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("music.mp3"));
+        backgroundMusic.setVolume(0.70f);
         backgroundMusic.setLooping(true);
         backgroundMusic.play();
 
         // The explosion sound when Robo hits an obstacle
         explosion = Gdx.audio.newSound(Gdx.files.internal("explode.wav"));
+
+        // The pick up sound when Robo hits a fuel cell
+        fuelPickedUp = Gdx.audio.newSound(Gdx.files.internal("fuel.wav"));
+
+        // Thruster, we use a Music instance because sound effect looping
+        // does not work on some Android devices
+        thruster = Gdx.audio.newMusic(Gdx.files.internal("thruster.wav"));
+    }
+
+    /**
+     * Loads an animation given a prefix and number of frames
+     * @param prefix the prefix, e.g. robo-down
+     * @param numFrames the number of frames
+     * @param frameTime the duration of a frame
+     * @return the animation
+     */
+    private Animation loadAnimation(String prefix, int numFrames, float frameTime) {
+        Array<TextureRegion> frames = new Array<TextureRegion>();
+        for(int i = 0; i < numFrames; i++) {
+            Texture texture = new Texture(prefix + "-" + (i+1) + ".png");
+            texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            frames.add(new TextureRegion(texture));
+        }
+        return new Animation(frameTime, frames);
     }
 
     /**
@@ -119,8 +163,11 @@ public class Renderer {
 
         // Draw the obstacles
         for (Obstacle o : world.getObstacles()) {
-            batch.draw(o.getPosition().y > 200 ? obstacleUpsideDown : obstacle, o.getPosition().x, o.getPosition().y);
+            batch.draw(obstacle, o.getPosition().x, o.getPosition().y, World.OBSTACLE_WIDTH / 2, World.OBSTACLE_HEIGHT / 2, World.OBSTACLE_WIDTH, World.OBSTACLE_HEIGHT, 1, 1, o.getRotation());
         }
+
+        // Draw the fuel cell
+        batch.draw(fuel, world.getFuel().getPosition().x, world.getFuel().getPosition().y, World.FUEL_WIDTH, World.FUEL_HEIGHT);
 
         // Draw repeating ground and ceiling
         batch.draw(ground, groundOffsetX, 0);
@@ -129,7 +176,21 @@ public class Renderer {
         batch.draw(ceiling, groundOffsetX + ceiling.getRegionWidth(), 480 - ceiling.getRegionHeight());
 
         // Draw Robo's animation, based on the time he's been flying so far.
-        batch.draw(roboAnimation.getKeyFrame(world.getRobo().getStateTime()), world.getRobo().getPosition().x, world.getRobo().getPosition().y);
+        Animation anim = null;
+        if(world.getState() == World.WorldState.Ready) {
+            anim = roboDown;
+        } else if (world.getState() == World.WorldState.GameOver) {
+            anim = roboDead;
+        } else if (world.getState() == World.WorldState.Playing) {
+            if(world.getRobo().getFuel() == 0) {
+                anim = roboDead;
+            } else if(world.getRobo().getVelocity().y > 0) {
+                anim = roboUp;
+            } else {
+                anim = roboDown;
+            }
+        }
+        batch.draw(anim.getKeyFrame(world.getRobo().getStateTime()), world.getRobo().getPosition().x, world.getRobo().getPosition().y, World.ROBO_WIDTH, World.ROBO_HEIGHT);
         batch.end();
 
         // Draw the UI elements based on the world state
@@ -144,8 +205,54 @@ public class Renderer {
             batch.draw(gameOver, Gdx.graphics.getWidth() / 2 - gameOver.getRegionWidth() / 2, Gdx.graphics.getHeight() / 2 - gameOver.getRegionHeight() / 2);
         }
         if (world.getState() == World.WorldState.Playing || world.getState() == World.WorldState.GameOver) {
-            font.draw(batch, "" + world.getScore(), Gdx.graphics.getWidth() / 2, Gdx.graphics.getHeight() - 60);
+            font.draw(batch, "" + world.getScore(), Gdx.graphics.getWidth() / 2 - 20, Gdx.graphics.getHeight() - 60);
+            batch.draw(fuel, Gdx.graphics.getWidth() / 2 - world.getRobo().getFuel(), 10, world.getRobo().getFuel() * 2, 40);
         }
         batch.end();
+
+        // renderDebug(world);
+    }
+
+    /**
+     * Renderes the bounds of all objects for debugging
+     * @param world
+     */
+    private void renderDebug(World world) {
+        Rectangle roboBounds = world.getRoboBounds();
+        shapeRenderer.setProjectionMatrix(worldCamera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.rect(roboBounds.x, roboBounds.y, roboBounds.width, roboBounds.height);
+        for(Obstacle o: world.getObstacles()) {
+            Rectangle obstacleBounds = world.getObstacleBounds(o);
+            shapeRenderer.rect(obstacleBounds.x, obstacleBounds.y, obstacleBounds.width, obstacleBounds.height);
+        }
+        shapeRenderer.end();
+    }
+
+    @Override
+    public void hitObstacle() {
+        explosion.play();
+    }
+
+    @Override
+    public void hitFuel() {
+        fuelPickedUp.play();
+    }
+
+    @Override
+    public void outOfFuel() {
+        explosion.play();
+    }
+
+    @Override
+    public void boosting() {
+        if(!thruster.isPlaying()) {
+            thruster.play();
+        }
+    }
+
+    @Override
+    public void boostingOff() {
+        thruster.stop();
     }
 }
