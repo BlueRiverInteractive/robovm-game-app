@@ -29,6 +29,8 @@ public class Renderer implements World.WorldCallback {
     private final TextureRegion ceiling;
     private final TextureRegion obstacle;
     private final TextureRegion fuel;
+    private final TextureRegion fuelBar;
+    private final Color roboGreen = new Color(0x8BBF26FF);
     private final Animation roboUp;
     private final Animation roboDown;
     private final Animation roboDead;
@@ -83,10 +85,12 @@ public class Renderer implements World.WorldCallback {
         obstacle.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // the fuel cell
-        Pixmap pixmap = new Pixmap(100, 100, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.GREEN);
-        pixmap.fill();
-        fuel = new TextureRegion(new Texture(pixmap));
+        fuel = new TextureRegion(new Texture("fuel-pod.png"));
+        fuel.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
+        // the fuel bar
+        fuelBar = new TextureRegion(new Texture("fuel-bar-background.png"));
+        fuelBar.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // Robo's animations
         roboUp = loadAnimation("robo-up", 3, 0.07f);
@@ -196,19 +200,28 @@ public class Renderer implements World.WorldCallback {
         // Draw the UI elements based on the world state
         // using the UI camera for pixel perfect rendering
         batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
         if (world.getState() == World.WorldState.Ready) {
             groundOffsetX = 0;
+            batch.begin();
             batch.draw(ready, Gdx.graphics.getWidth() / 2 - ready.getRegionWidth() / 2, Gdx.graphics.getHeight() / 2 - ready.getRegionHeight() / 2);
+            batch.end();
         }
         if (world.getState() == World.WorldState.GameOver) {
+            batch.begin();
             batch.draw(gameOver, Gdx.graphics.getWidth() / 2 - gameOver.getRegionWidth() / 2, Gdx.graphics.getHeight() / 2 - gameOver.getRegionHeight() / 2);
+            batch.end();
         }
         if (world.getState() == World.WorldState.Playing || world.getState() == World.WorldState.GameOver) {
+            batch.begin();
             font.draw(batch, "" + world.getScore(), Gdx.graphics.getWidth() / 2 - 20, Gdx.graphics.getHeight() - 60);
-            batch.draw(fuel, Gdx.graphics.getWidth() / 2 - world.getRobo().getFuel(), 10, world.getRobo().getFuel() * 2, 40);
+            batch.draw(fuelBar, Gdx.graphics.getWidth() - 10 - fuelBar.getRegionWidth(), Gdx.graphics.getHeight() / 2 - fuelBar.getRegionHeight() / 2);
+            batch.end();
+            shapeRenderer.setProjectionMatrix(uiCamera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(roboGreen);
+            shapeRenderer.rect(Gdx.graphics.getWidth() - 10 - fuelBar.getRegionWidth() + 6, Gdx.graphics.getHeight() / 2 - fuelBar.getRegionHeight() / 2 + 18, 19, world.getRobo().getFuel() / 100f * 309);
+            shapeRenderer.end();
         }
-        batch.end();
 
         // renderDebug(world);
     }
