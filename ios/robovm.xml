@@ -44,4 +44,5 @@
     <framework>AudioToolbox</framework>
     <framework>AVFoundation</framework>
   </frameworks>
+  <treeShaker>aggressive</treeShaker>
 </config>
