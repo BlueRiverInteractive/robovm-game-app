@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<sample>  
+	<title>RoboMission</title>
+	<description>A simple cross-platform game for iOS, Android and desktop.</description>	
+	<isCrossPlatform>true</isCrossPlatform>
+	<featured>true</featured>
+	<url>https://github.com/robovm/robovm-game-app</url>
+	<subdir></subdir>
+</sample>
