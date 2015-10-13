@@ -29,4 +29,9 @@ public class RoboMission extends ApplicationAdapter {
         // Render the world and UI
         renderer.render(world);
     }
+
+    @Override
+    public void resize(int width, int height) {
+        renderer.resize(width, height);
+    }
 }

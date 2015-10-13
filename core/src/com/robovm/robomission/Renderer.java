@@ -268,4 +268,9 @@ public class Renderer implements World.WorldCallback {
     public void boostingOff() {
         thruster.stop();
     }
+
+    public void resize(int width, int height) {
+        uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        uiCamera.update();
+    }
 }
