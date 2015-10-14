@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.*;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.viewport.Viewport;
 
 /**
  * Takes a world and renders its state to the screen
@@ -22,6 +23,8 @@ public class Renderer implements World.WorldCallback {
     private final ShapeRenderer shapeRenderer;
     private final OrthographicCamera worldCamera;
     private final OrthographicCamera uiCamera;
+    private float uiWidth;
+    private float uiHeight;
 
     private final BitmapFont font;
     private final Texture background;
@@ -63,8 +66,7 @@ public class Renderer implements World.WorldCallback {
         // The UI camera is used to render UI elements
         // to the screen. We use a pixel perfect camera
         uiCamera = new OrthographicCamera();
-        uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        uiCamera.update();
+        resizeUICamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // finally we load all the assets we need
         // the fond used to display the score
@@ -203,23 +205,23 @@ public class Renderer implements World.WorldCallback {
         if (world.getState() == World.WorldState.Ready) {
             groundOffsetX = 0;
             batch.begin();
-            batch.draw(ready, Gdx.graphics.getWidth() / 2 - ready.getRegionWidth() / 2, Gdx.graphics.getHeight() / 2 - ready.getRegionHeight() / 2);
+            batch.draw(ready, uiWidth / 2 - ready.getRegionWidth() / 2, uiHeight / 2 - ready.getRegionHeight() / 2);
             batch.end();
         }
         if (world.getState() == World.WorldState.GameOver) {
             batch.begin();
-            batch.draw(gameOver, Gdx.graphics.getWidth() / 2 - gameOver.getRegionWidth() / 2, Gdx.graphics.getHeight() / 2 - gameOver.getRegionHeight() / 2);
+            batch.draw(gameOver, uiWidth / 2 - gameOver.getRegionWidth() / 2, uiHeight / 2 - gameOver.getRegionHeight() / 2);
             batch.end();
         }
         if (world.getState() == World.WorldState.Playing || world.getState() == World.WorldState.GameOver) {
             batch.begin();
-            font.draw(batch, "" + world.getScore(), Gdx.graphics.getWidth() / 2 - 20, Gdx.graphics.getHeight() - 60);
-            batch.draw(fuelBar, Gdx.graphics.getWidth() - 10 - fuelBar.getRegionWidth(), Gdx.graphics.getHeight() / 2 - fuelBar.getRegionHeight() / 2);
+            font.draw(batch, "" + world.getScore(), uiWidth / 2 - 20, uiHeight - 60);
+            batch.draw(fuelBar, uiWidth - 10 - fuelBar.getRegionWidth(), uiHeight / 2 - fuelBar.getRegionHeight() / 2);
             batch.end();
             shapeRenderer.setProjectionMatrix(uiCamera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(roboGreen);
-            shapeRenderer.rect(Gdx.graphics.getWidth() - 10 - fuelBar.getRegionWidth() + 6, Gdx.graphics.getHeight() / 2 - fuelBar.getRegionHeight() / 2 + 18, 19, world.getRobo().getFuel() / 100f * 309);
+            shapeRenderer.rect(uiWidth - 10 - fuelBar.getRegionWidth() + 6, uiHeight / 2 - fuelBar.getRegionHeight() / 2 + 18, 19, world.getRobo().getFuel() / 100f * 309);
             shapeRenderer.end();
         }
 
@@ -270,7 +272,14 @@ public class Renderer implements World.WorldCallback {
     }
 
     public void resize(int width, int height) {
-        uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+        resizeUICamera(width, height);
+    }
+
+    private void resizeUICamera(int width, int height) {
+        uiWidth = 800;
+        uiHeight = height / (float)width * 800;
+
+        uiCamera.setToOrtho(false, uiWidth, uiHeight);
         uiCamera.update();
     }
 }
