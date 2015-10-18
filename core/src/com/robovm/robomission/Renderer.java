@@ -27,12 +27,14 @@ public class Renderer implements World.WorldCallback {
     private float uiHeight;
 
     private final BitmapFont font;
+    private final GlyphLayout layout;
     private final Texture background;
     private final TextureRegion ground;
     private final TextureRegion ceiling;
     private final TextureRegion obstacle;
     private final TextureRegion fuel;
     private final TextureRegion fuelBar;
+    private final TextureRegion scorePad;
     private final Color roboGreen = new Color(0x8BBF26FF);
     private final Animation roboUp;
     private final Animation roboDown;
@@ -69,8 +71,10 @@ public class Renderer implements World.WorldCallback {
         resizeUICamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
 
         // finally we load all the assets we need
-        // the fond used to display the score
+        // the fond used to display the score. We
+        // also use a GlyphLayout to position the text
         font = new BitmapFont(Gdx.files.internal("arial.fnt"));
+        layout = new GlyphLayout(font, "0");
 
         // the static background
         background = new Texture("background.png");
@@ -93,6 +97,10 @@ public class Renderer implements World.WorldCallback {
         // the fuel bar
         fuelBar = new TextureRegion(new Texture("fuel-bar-background.png"));
         fuelBar.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+
+        // the score pad
+        scorePad = new TextureRegion(new Texture("scorepad.png"));
+        scorePad.getTexture().setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
 
         // Robo's animations
         roboUp = loadAnimation("robo-up", 3, 0.07f);
@@ -214,10 +222,19 @@ public class Renderer implements World.WorldCallback {
             batch.end();
         }
         if (world.getState() == World.WorldState.Playing || world.getState() == World.WorldState.GameOver) {
+            // draw fuel bar background ands score pad with score
             batch.begin();
-            font.draw(batch, "" + world.getScore(), uiWidth / 2 - 20, uiHeight - 60);
+            float scorePadX = uiWidth - 20 - fuelBar.getRegionWidth() - scorePad.getRegionWidth();
+            float scorePadY = uiHeight / 2 - fuelBar.getRegionHeight() / 2;
+            batch.draw(scorePad, scorePadX, scorePadY);
+
+            layout.setText(font, "" + world.getScore());
+            font.draw(batch, "" + world.getScore(), scorePadX + scorePad.getRegionWidth() / 2 - layout.width / 2, scorePadY + scorePad.getRegionHeight() / 2 + layout.height / 2);
+
             batch.draw(fuelBar, uiWidth - 10 - fuelBar.getRegionWidth(), uiHeight / 2 - fuelBar.getRegionHeight() / 2);
             batch.end();
+
+            // draw fuel bar fill
             shapeRenderer.setProjectionMatrix(uiCamera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(roboGreen);
