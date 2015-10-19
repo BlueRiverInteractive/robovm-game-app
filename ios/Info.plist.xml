@@ -30,6 +30,8 @@
     <true/>
     <key>MinimumOSVersion</key>
     <string>6.0</string>
+    <key>UIRequiresFullScreen</key>
+    <true/>
     <key>UIDeviceFamily</key>
     <array>
         <integer>1</integer>
