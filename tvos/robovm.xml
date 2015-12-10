@@ -1,9 +1,8 @@
 <config>
   <executableName>${app.executable}</executableName>
   <mainClass>${app.mainclass}</mainClass>
-  <os>ios</os>
-  <arch>thumbv7</arch>
-  <target>ios</target>
+  <os>tvos</os>
+  <target>tvos</target>
   <iosInfoPList>Info.plist.xml</iosInfoPList>
   <resources>
     <resource>
